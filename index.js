@@ -3,6 +3,7 @@ const express =require("express");
 const { MongoClient } = require('mongodb');
 const cors = require('cors');
 require('dotenv').config()
+const nodemailer = require("nodemailer");
 const app = express();
 const port = process.env.PORT || 4000;
 const ObjectId = require('mongodb').ObjectId;
@@ -10,6 +11,11 @@ const ObjectId = require('mongodb').ObjectId;
 
 app.use(cors());
 app.use(express.json());
+
+//nodemailer
+
+
+//config database
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.cwsc8.mongodb.net/myFirstDatabase?retryWrites=true&w=majority`;
 console.log(uri);
@@ -32,6 +38,27 @@ async function run (){
     app.post('/bookingorder',async(req,res)=>{
         const booking = req.body;
         console.log("heat from booking api",booking);
+
+
+        // let testAccount = await nodemailer.createTestAccount();
+
+        // // create reusable transporter object using the default SMTP transport
+        // let transporter = nodemailer.createTransport({
+        //   host: "smtp.ethereal.email",
+        //   port: 587,
+        //   secure: false, // true for 465, false for other ports
+        //   auth: {
+        //     user: 'sabbir15-2208@diu.edu.bd', // generated ethereal user
+        //    , // generated ethereal password
+        //   },
+        // });
+        // let info = await transporter.sendMail({
+        //     from: '"Tour Adviser" <foo@example.com>', // sender address
+        //     to: "nahidjc80@gmail.com", // list of receivers
+        //     subject: "Booking Confirmation", // Subject line
+        //     text: "Your booking order successfully done", // plain text body
+        //     html: "<b>Your booking order successfully done</b>", // html body
+        //   });
         
         const result = await bookingCollection.insertOne(booking);
         console.log(result);
@@ -50,6 +77,16 @@ async function run (){
     const id = req.params.id;
     const query = { _id: ObjectId(id) };
     const result = await bookingCollection.deleteOne(query);
+
+    console.log('deleting user with id ', result);
+
+    res.json(result);
+})
+
+  app.delete('/hotelBookings/delete/:id', async (req, res) => {
+    const id = req.params.id;
+    const query = { _id: ObjectId(id) };
+    const result = await hotelBookingCollection.deleteOne(query);
 
     console.log('deleting user with id ', result);
 
@@ -109,6 +146,13 @@ async function run (){
            const hotelBooking=await cursor.toArray();
            res.json(hotelBooking);
         })
+        app.get('/hotelBookings', async(req,res)=>{
+            const cursor = hotelBookingCollection.find({});
+            const hotelBooking = await cursor.toArray();
+            res.send(hotelBooking)
+           
+           
+        })
 
         // user api
 
@@ -127,10 +171,19 @@ async function run (){
             const result = await usersCollection.updateOne(filter, updateDoc, options);
             res.json(result);
         })
+        // admin put
         app.put('/users/admin', async(req,res)=>{
             const user =req.body;
             const filter = {email : user.email};
             const updateDoc = { $set: { role: 'admin' } };
+            const result = await usersCollection.updateOne(filter, updateDoc);
+            res.json(result);
+        })
+        //super admin put
+        app.put('/users/superAdmin', async(req,res)=>{
+            const user =req.body;
+            const filter = {email : user.email};
+            const updateDoc = { $set: { role: 'superAdmin' } };
             const result = await usersCollection.updateOne(filter, updateDoc);
             res.json(result);
         })
@@ -142,22 +195,28 @@ async function run (){
             const query = { email: email };
             const user = await usersCollection.findOne(query);
             let isAdmin = false;
+            let isSuperAdmin=false
             if (user?.role === 'admin') {
                 isAdmin = true;
             }
-            res.json({ admin: isAdmin });
-        })
-
-        app.get('/users/:email', async (req, res) => {
-            const email = req.params.email;
-            const query = { email: email };
-            const user = await usersCollection.findOne(query);
-            let isAdmin = false;
-            if (user?.role === 'admin') {
-                isAdmin = true;
+            if (user?.role === 'superAdmin') {
+                isSuperAdmin = true;
             }
-            res.json({ admin: isAdmin });
+            res.json({ admin: isAdmin,superAdmin:isSuperAdmin });
         })
+            //   make super admin
+              
+            //   app.get('/users/:email', async (req, res) => {
+            //     const email = req.params.email;
+            //     const query = { email: email };
+            //     const user = await usersCollection.findOne(query);
+            //     let isSuperAdmin = false;
+            //     if (user?.role === 'superAdmin') {
+            //         isSuperAdmin = true;
+            //     }
+            //     res.json({ superAdmin: isSuperAdmin });
+            // })
+       
 
     }
     finally{
