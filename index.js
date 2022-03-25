@@ -5,12 +5,14 @@ const cors = require('cors');
 require('dotenv').config()
 const nodemailer = require("nodemailer");
 const app = express();
+const fileUpload =require('express-fileupload')
 const port = process.env.PORT || 4000;
 const ObjectId = require('mongodb').ObjectId;
 // middelware
 
 app.use(cors());
 app.use(express.json());
+app.use(fileUpload());
 
 //nodemailer
 
@@ -30,7 +32,9 @@ async function run (){
     const bookingCollection = database.collection("bookingorder");
     const hotelBookingCollection = database.collection("hotelBookingCollection")
     const usersCollection = database.collection("users")
-    const addHotelCollection = database.collection("hotels")
+    const addHotelCollection = database.collection("hotel")
+    const addRoomCollection= database.collection("room")
+    const rattingCollection= database.collection('feedback')
 
 
 
@@ -40,25 +44,7 @@ async function run (){
         console.log("heat from booking api",booking);
 
 
-        // let testAccount = await nodemailer.createTestAccount();
-
-        // // create reusable transporter object using the default SMTP transport
-        // let transporter = nodemailer.createTransport({
-        //   host: "smtp.ethereal.email",
-        //   port: 587,
-        //   secure: false, // true for 465, false for other ports
-        //   auth: {
-        //     user: 'sabbir15-2208@diu.edu.bd', // generated ethereal user
-        //    , // generated ethereal password
-        //   },
-        // });
-        // let info = await transporter.sendMail({
-        //     from: '"Tour Adviser" <foo@example.com>', // sender address
-        //     to: "nahidjc80@gmail.com", // list of receivers
-        //     subject: "Booking Confirmation", // Subject line
-        //     text: "Your booking order successfully done", // plain text body
-        //     html: "<b>Your booking order successfully done</b>", // html body
-        //   });
+       
         
         const result = await bookingCollection.insertOne(booking);
         console.log(result);
@@ -114,20 +100,86 @@ async function run (){
 
         //data colections for hotel
 
-        app.post('/addHotels',async(req,res)=>{
-            const hotel = req.body;
-            console.log("heat from post api",hotel);
+        app.post('/addHotel',async(req,res)=>{
+            const hotelName=req.body.hotelName;
+            const place=req.body.place;
+            const dis=req.body.dis;
+            const adminEmail=req.body.adminEmail;
+            const pic =req.files.image;
+            const picData = pic.data;
+            const encodePic=picData.toString('base64');
+            const imgBuffer= Buffer.from(encodePic,'base64')
+            const hotel={
+                hotelName,
+                dis,
+                place,
+                adminEmail,
+                image:imgBuffer
+            }
+            const result =await addHotelCollection.insertOne(hotel)
             
-            const result = await addHotelCollection.insertOne(hotel);
-            console.log(result);
+            
             res.json(result)
-        });
 
-        app.get('/addHotels', async(req,res)=>{
-            const cursor = addHotelCollection.find({});
+        })
+
+        app.post('/feedback',async(req,res)=>{
+            const userName=req.body.userName;
+            const comment=req.body.comment;
+            const rate=req.body.rate;
+            const feedback={
+                userName,
+                comment,
+                rate
+            }
+            const result = await rattingCollection.insertOne(feedback)
+            res.json(result)
+        })
+        app.get('/feedback',async(req,res)=>{
+            const cursor = rattingCollection.find({});
+            const feedback= await cursor.toArray();
+            res.send(feedback)
+        })
+
+        app.get('/addHotel', async(req,res)=>{
+            const cursor= addHotelCollection.find({});
             const hotel = await cursor.toArray();
             res.send(hotel)
         })
+
+        // data collection for rooms
+
+        app.post('/room',async(req,res)=>{
+           
+            const type=req.body.type;
+            const roomAdminEmail=req.body.roomAdminEmail;
+            const dis=req.body.dis;
+            const price=req.body.price;
+            const ratting=req.body.ratting;
+            const pic =req.files.image;
+            const picData = pic.data;
+            const encodePic=picData.toString('base64');
+            const imgBuffer= Buffer.from(encodePic,'base64')
+            const room={
+                type,
+                roomAdminEmail,
+                price,
+                dis,
+                ratting,
+                image:imgBuffer
+            }
+            const result =await addRoomCollection.insertOne(room)
+            
+            
+            res.json(result)
+        })
+
+        app.get('/room',async(req,res)=>{
+            const cursor = addRoomCollection.find({});
+            const room= await cursor.toArray();
+            res.send(room)
+        })
+
     
 
         // data collections for hotelsBooking
@@ -204,18 +256,7 @@ async function run (){
             }
             res.json({ admin: isAdmin,superAdmin:isSuperAdmin });
         })
-            //   make super admin
-              
-            //   app.get('/users/:email', async (req, res) => {
-            //     const email = req.params.email;
-            //     const query = { email: email };
-            //     const user = await usersCollection.findOne(query);
-            //     let isSuperAdmin = false;
-            //     if (user?.role === 'superAdmin') {
-            //         isSuperAdmin = true;
-            //     }
-            //     res.json({ superAdmin: isSuperAdmin });
-            // })
+            
        
 
     }
