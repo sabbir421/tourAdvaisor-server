@@ -28,7 +28,7 @@ async function run (){
         await client.connect();
         console.log("wow connected");
         const database = client.db("tourGuide");
-    const ServicesCollection = database.collection("services");
+    const packegeCollection = database.collection("packege");
     const bookingCollection = database.collection("bookingorder");
     const hotelBookingCollection = database.collection("hotelBookingCollection")
     const usersCollection = database.collection("users")
@@ -82,19 +82,38 @@ async function run (){
 
 
     // get api
-    app.get('/services', async(req,res)=>{
-        const cursor = ServicesCollection.find({});
-        const services = await cursor.toArray();
-        res.send(services)
+    app.get('/packege', async(req,res)=>{
+        const cursor = packegeCollection.find({});
+        const packege = await cursor.toArray();
+        res.send(packege)
     })
 
     // post api
-        app.post('/services',async(req,res)=>{
-            const service = req.body;
-            console.log("heat from post api",service);
+        app.post('/packege',async(req,res)=>{
+            // const service = req.body;
+            // console.log("heat from post api",service);
             
-            const result = await ServicesCollection.insertOne(service);
-            console.log(result);
+            // const result = await ServicesCollection.insertOne(service);
+            // console.log(result);
+            // res.json(result)
+
+            const hostName=req.body.hostName;
+            const destination= req.body.destination;
+            const discription = req.body.discription;
+            const price =req.body.price;
+            const pic =req.files.img;
+            const picData = pic.data;
+            const encodePic=picData.toString('base64');
+            const imgBuffer= Buffer.from(encodePic,'base64')
+            const packege = {
+                hostName,
+                destination,
+                discription,
+                price,
+               image: imgBuffer,
+                
+            }
+            const result=await packegeCollection.insertOne(packege)
             res.json(result)
         });
 
