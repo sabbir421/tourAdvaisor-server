@@ -186,6 +186,7 @@ async function run (){
 
         app.post('/hotelBooking', async(req,res)=>{
             const hotelBook = req.body;
+            console.log("new post");
             console.log("heat from post api",hotelBook);
             const result = await hotelBookingCollection.insertOne(hotelBook);
             res.json({message:"hello"}) 
