@@ -6,7 +6,7 @@ require('dotenv').config()
 const nodemailer = require("nodemailer");
 const app = express();
 const fileUpload =require('express-fileupload')
-const port = process.env.PORT || 4000;
+const port = process.env.PORT || 5000;
 const ObjectId = require('mongodb').ObjectId;
 // middelware
 
@@ -35,6 +35,7 @@ async function run (){
     const addHotelCollection = database.collection("hotel")
     const addRoomCollection= database.collection("room")
     const rattingCollection= database.collection('feedback')
+    const blogCollection = database.collection('blog')
 
 
 
@@ -42,12 +43,10 @@ async function run (){
     app.post('/bookingorder',async(req,res)=>{
         const booking = req.body;
         console.log("heat from booking api",booking);
-
-
-       
-        
+      
         const result = await bookingCollection.insertOne(booking);
         console.log(result);
+    
         res.json(result)
     });
 
@@ -58,18 +57,26 @@ async function run (){
         res.send(booking)
     })
 
+    app.get('/bookingorder/:id', async(req,res)=>{
+        const id = req.params.id;
+        const query = { _id: ObjectId(id) };
+        const booking = bookingCollection.find(query);
+        console.log(booking);
+        res.send(booking)
+    })
+
 
   app.delete('/bookingorder/delete/:id', async (req, res) => {
     const id = req.params.id;
     const query = { _id: ObjectId(id) };
     const result = await bookingCollection.deleteOne(query);
 
-    console.log('deleting user with id ', result);
+    console.log('deleting user with id ', result);      
 
     res.json(result);
 })
 
-  app.delete('/hotelBookings/delete/:id', async (req, res) => {
+  app.delete('hotelBookings/delete/id', async (req, res) => {
     const id = req.params.id;
     const query = { _id: ObjectId(id) };
     const result = await hotelBookingCollection.deleteOne(query);
@@ -128,6 +135,7 @@ async function run (){
             const picData = pic.data;
             const encodePic=picData.toString('base64');
             const imgBuffer= Buffer.from(encodePic,'base64')
+       
             const hotel={
                 hotelName,
                 dis,
@@ -140,6 +148,12 @@ async function run (){
             
             res.json(result)
 
+        })
+
+        app.get('/addHotel', async(req,res)=>{
+            const cursor= addHotelCollection.find({});
+            const hotel = await cursor.toArray();
+            res.send(hotel)
         })
 
         app.post('/feedback',async(req,res)=>{
@@ -160,10 +174,26 @@ async function run (){
             res.send(feedback)
         })
 
-        app.get('/addHotel', async(req,res)=>{
-            const cursor= addHotelCollection.find({});
-            const hotel = await cursor.toArray();
-            res.send(hotel)
+        
+
+        //blog
+        app.post('/blog',async(req,res)=>{  
+            const userName=req.body.userName;
+            const comment=req.body.comment;
+            const headnig=req.body.heading;
+            const blog={
+                userName,
+                comment,
+                headnig
+            }
+            const result = await blogCollection.insertOne(blog)
+            res.json(result)
+        })
+
+        app.get('/blog', async(req,res)=>{
+            const cursor= blogCollection.find({});
+            const blog = await cursor.toArray();
+            res.send(blog)
         })
 
         // data collection for rooms
@@ -224,6 +254,13 @@ async function run (){
             res.send(hotelBooking)
            
            
+        })
+        app.put('/booking-payment/:id',async(req,res)=>{
+        
+            const filter = {_id :ObjectId (req.params.id)};
+            const result = await bookingCollection.updateOne(filter, { $set: { isPaid: true } });
+            console.log(result);
+            res.send({"success":true})
         })
 
         // user api
